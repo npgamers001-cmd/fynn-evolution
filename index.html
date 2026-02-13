@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fynn Evolution 🦈</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: #0f172a;
+            color: white;
+            margin: 0;
+            overflow: hidden;
+            touch-action: none;
+        }
+        h1, .game-font {
+            font-family: 'Fredoka+One', cursive;
+        }
+        #game-canvas {
+            background: linear-gradient(to bottom, #1e40af, #1e3a8a, #172554);
+            cursor: none;
+        }
+        .ad-overlay {
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+        }
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        /* Real Ad Banner Styling */
+        .ad-banner {
+            height: 60px;
+            background: #1e293b;
+            border-top: 2px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen">
+
+    <!-- Top Status Bar 📊 -->
+    <div class="fixed top-0 left-0 w-full p-4 flex justify-between items-center z-10 pointer-events-none">
+        <div class="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+            <span class="game-font text-yellow-400">SCORE: </span>
+            <span id="score-val" class="font-bold">0</span>
+        </div>
+        <div class="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+            <span class="game-font text-cyan-400">SIZE: </span>
+            <span id="size-val" class="font-bold">1.0</span>
+        </div>
+    </div>
+
+    <!-- Main Game Area 🌊 -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Bottom Banner Ad 🟦 -->
+    <div class="ad-banner">
+        <div class="flex items-center space-x-3">
+            <span class="bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded leading-none">AD</span>
+            <p class="text-xs sm:text-sm text-slate-300">Remove Ads & Get <span class="text-yellow-400 font-bold">2X GROWTH</span>!</p>
+            <button class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-[10px] font-bold transition-all transform hover:scale-105 active:scale-95">UPGRADE</button>
+        </div>
+    </div>
+
+    <!-- UI: Start Menu 🦈 -->
+    <div id="start-menu" class="fixed inset-0 ad-overlay flex flex-center z-50 p-6">
+        <div class="m-auto text-center max-w-md w-full">
+            <h1 class="text-7xl text-cyan-400 mb-4 floating drop-shadow-lg">FYNN</h1>
+            <p class="text-xl mb-12 text-slate-300 italic">"The Hungriest Shark in the Sea!" 🌊🦈</p>
+            <button onclick="startGame()" class="pulse bg-gradient-to-r from-cyan-500 to-blue-600 w-full py-5 rounded-2xl text-3xl game-font shadow-xl shadow-cyan-500/40 hover:brightness-110 transition-all">
+                PLAY NOW! ✨
+            </button>
+        </div>
+    </div>
+
+    <!-- UI: Rewarded Ad Revive Modal 🎁 -->
+    <div id="ad-reward-modal" class="hidden fixed inset-0 ad-overlay flex z-50 p-6">
+        <div class="m-auto bg-slate-900/90 border-2 border-yellow-500 p-8 rounded-[2.5rem] text-center shadow-[0_0_50px_rgba(234,179,8,0.3)] max-w-sm w-full">
+            <div class="inline-block bg-yellow-500 text-black text-xs font-black px-3 py-1 rounded-full mb-4">REWARDED AD</div>
+            <div class="text-6xl mb-4">📺</div>
+            <h2 class="text-3xl game-font text-yellow-400 mb-2">REVIVE FYNN?</h2>
+            <p class="text-slate-300 mb-8 leading-relaxed">Watch a short video to keep your <span class="text-cyan-400 font-bold">Progress</span> and get <span class="text-yellow-400 font-bold">Shield</span>! 🛡️</p>
+            
+            <button onclick="reviveFynn()" class="bg-gradient-to-b from-yellow-400 to-yellow-600 text-black w-full py-4 rounded-2xl text-xl font-black mb-4 hover:brightness-110 shadow-lg shadow-yellow-500/20 flex items-center justify-center space-x-2 transition-all active:scale-95">
+                <span>WATCH AD</span>
+                <span>▶️</span>
+            </button>
+            
+            <button onclick="endGame()" class="text-slate-500 text-sm font-bold hover:text-slate-300 transition-colors uppercase tracking-widest">Quit Game</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score-val');
+        const sizeEl = document.getElementById('size-val');
+
+        let score = 0;
+        let scale = 1.0;
+        let gameActive = false;
+        let mouseX = 0;
+        let mouseY = 0;
+
+        const player = {
+            x: 0,
+            y: 0,
+            size: 20,
+            speed: 0.12,
+            color: '#22d3ee',
+            invincible: false
+        };
+
+        const enemies = [];
+        const bubbles = [];
+
+        function init() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            
+            bubbles.length = 0;
+            for(let i=0; i<30; i++) {
+                bubbles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 4 + 1,
+                    speed: Math.random() * 0.8 + 0.2
+                });
+            }
+        }
+
+        function createEnemy() {
+            if (!gameActive) return;
+            const side = Math.floor(Math.random() * 4);
+            let x, y;
+            if (side === 0) { x = -50; y = Math.random() * canvas.height; }
+            else if (side === 1) { x = canvas.width + 50; y = Math.random() * canvas.height; }
+            else if (side === 2) { x = Math.random() * canvas.width; y = -50; }
+            else { x = Math.random() * canvas.width; y = canvas.height + 50; }
+
+            const enemySize = (Math.random() * player.size * 1.8) + 5;
+            enemies.push({
+                x, y,
+                size: enemySize,
+                speed: (Math.random() * 1.5) + 0.5,
+                color: enemySize > player.size ? '#ef4444' : '#22c55e',
+                angle: Math.atan2(player.y - y, player.x - x) + (Math.random() - 0.5)
+            });
+        }
+
+        function drawPlayer() {
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+            ctx.rotate(angle);
+
+            if (player.invincible) {
+                ctx.shadowBlur = 25;
+                ctx.shadowColor = '#fbbf24';
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, player.size * 1.8, player.size * 1.3, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = player.invincible ? '#fbbf24' : player.color;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, player.size * 1.5, player.size, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Tail
+            ctx.beginPath();
+            ctx.moveTo(-player.size * 0.5, 0);
+            ctx.lineTo(-player.size * 1.8, -player.size * 0.9);
+            ctx.lineTo(-player.size * 1.8, player.size * 0.9);
+            ctx.fill();
+
+            // Eye
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(player.size * 0.8, -player.size * 0.3, player.size * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(player.size * 0.85, -player.size * 0.3, player.size * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawFish(fish) {
+            ctx.save();
+            ctx.translate(fish.x, fish.y);
+            ctx.rotate(fish.angle);
+            ctx.fillStyle = fish.color;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, fish.size, fish.size * 0.6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(-fish.size * 0.8, 0);
+            ctx.lineTo(-fish.size * 1.4, -fish.size * 0.5);
+            ctx.lineTo(-fish.size * 1.4, fish.size * 0.5);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function update() {
+            if (!gameActive) return;
+
+            bubbles.forEach(b => {
+                b.y -= b.speed;
+                if (b.y < -20) b.y = canvas.height + 20;
+            });
+
+            player.x += (mouseX - player.x) * player.speed;
+            player.y += (mouseY - player.y) * player.speed;
+
+            if (Math.random() < 0.04) createEnemy();
+
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const e = enemies[i];
+                e.x += Math.cos(e.angle) * e.speed;
+                e.y += Math.sin(e.angle) * e.speed;
+
+                const dist = Math.hypot(player.x - e.x, player.y - e.y);
+                if (dist < player.size + e.size) {
+                    if (player.size > e.size) {
+                        score += Math.round(e.size);
+                        player.size += 0.4;
+                        scoreEl.innerText = score;
+                        sizeEl.innerText = (player.size / 20).toFixed(1);
+                        enemies.splice(i, 1);
+                    } else if (!player.invincible) {
+                        gameOver();
+                    }
+                }
+
+                if (e.x < -150 || e.x > canvas.width + 150 || e.y < -150 || e.y > canvas.height + 150) {
+                    enemies.splice(i, 1);
+                }
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+            bubbles.forEach(b => {
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            enemies.forEach(drawFish);
+            drawPlayer();
+
+            update();
+            requestAnimationFrame(render);
+        }
+
+        function startGame() {
+            document.getElementById('start-menu').classList.add('hidden');
+            score = 0;
+            player.size = 20;
+            player.invincible = false;
+            enemies.length = 0;
+            scoreEl.innerText = score;
+            sizeEl.innerText = "1.0";
+            gameActive = true;
+        }
+
+        function gameOver() {
+            gameActive = false;
+            document.getElementById('ad-reward-modal').classList.remove('hidden');
+        }
+
+        function reviveFynn() {
+            // This represents where a real Ad SDK callback would trigger! 📺💎
+            document.getElementById('ad-reward-modal').classList.add('hidden');
+            player.invincible = true;
+            gameActive = true;
+            
+            // Safety blast: clear enemies around player
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const dist = Math.hypot(player.x - enemies[i].x, player.y - enemies[i].y);
+                if (dist < 400) enemies.splice(i, 1);
+            }
+
+            setTimeout(() => {
+                player.invincible = false;
+            }, 4000); // 4 seconds of power-up!
+        }
+
+        function endGame() {
+            document.getElementById('ad-reward-modal').classList.add('hidden');
+            document.getElementById('start-menu').classList.remove('hidden');
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        window.addEventListener('touchstart', (e) => {
+             mouseX = e.touches[0].clientX;
+             mouseY = e.touches[0].clientY;
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            mouseX = e.touches[0].clientX;
+            mouseY = e.touches[0].clientY;
+            e.preventDefault();
+        }, { passive: false });
+
+        window.onload = () => {
+            init();
+            render();
+        };
+
+        window.onresize = init;
+    </script>
+</body>
+</html>
