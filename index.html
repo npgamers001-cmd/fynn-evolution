@@ -3,31 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Shardbound Rush</title>
+  <title>Skyline Obby Run</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="app-shell">
     <section class="hero-card">
       <div class="hero-copy">
-        <p class="eyebrow">Cross-platform 2D action platformer</p>
-        <h1 class="title">Shardbound Rush</h1>
+        <p class="eyebrow">Mobile-ready pseudo-3D obby</p>
+        <h1 class="title">Skyline Obby Run</h1>
         <p class="subtitle">
-          Sprint across sky ruins, stack stars, buy upgrades, and chase faster clears in a richer side-scrolling run built for both mobile and desktop.
+          Sprint through lava climbs, time-bending jumps, illusion towers, tornado drift lanes, and alien gravity traps in a lightweight browser obby with built-in synth SFX.
         </p>
       </div>
       <div class="hero-stats" aria-label="Game feature summary">
         <div class="stat-pill">
           <span>Campaign</span>
-          <strong>12 Missions</strong>
+          <strong>5 Courses</strong>
         </div>
         <div class="stat-pill">
-          <span>Progression</span>
-          <strong>Stars + Upgrades</strong>
+          <span>Game Loop</span>
+          <strong>Checkpoints + Speedruns</strong>
         </div>
         <div class="stat-pill">
-          <span>Controls</span>
-          <strong>Touch + Keyboard</strong>
+          <span>Built For</span>
+          <strong>Desktop + Mobile</strong>
         </div>
       </div>
     </section>
@@ -36,40 +36,35 @@
       <aside class="sidebar">
         <section class="panel">
           <div class="panel-header">
-            <h2>Missions</h2>
-            <p>Push deeper into the skyline and replay stages for cleaner clears.</p>
+            <h2>Courses</h2>
+            <p>Clear each obby to unlock the next and keep shaving time off your best runs.</p>
           </div>
-          <div id="missionGrid" class="mission-grid" aria-live="polite"></div>
+          <div id="courseGrid" class="course-grid" aria-live="polite"></div>
         </section>
 
-        <section class="panel">
-          <div class="panel-header">
-            <h2>Workshop</h2>
-            <p>Spend earned shards on permanent movement and survival upgrades.</p>
-          </div>
-          <div id="upgradeGrid" class="upgrade-grid" aria-live="polite"></div>
-        </section>
+        <section class="panel" id="intelPanel"></section>
       </aside>
 
       <section class="game-column">
         <div class="canvas-shell">
-          <canvas id="gameCanvas" width="960" height="540" aria-label="Shardbound Rush game canvas"></canvas>
+          <canvas id="gameCanvas" width="960" height="540" aria-label="Skyline Obby Run game canvas"></canvas>
 
           <div id="touchControls" class="touch-controls" aria-hidden="true">
-            <div class="touch-move">
-              <button class="touch-button" data-touch="left" type="button" aria-label="Move left">Left</button>
-              <button class="touch-button" data-touch="right" type="button" aria-label="Move right">Right</button>
+            <div class="touch-dpad" aria-label="Movement controls">
+              <button class="touch-button up" data-touch="forward" type="button" aria-label="Move forward">Up</button>
+              <button class="touch-button left" data-touch="left" type="button" aria-label="Move left">Left</button>
+              <button class="touch-button down" data-touch="back" type="button" aria-label="Move back">Back</button>
+              <button class="touch-button right" data-touch="right" type="button" aria-label="Move right">Right</button>
             </div>
             <div class="touch-actions">
-              <button class="touch-button accent" data-touch="jump" type="button" aria-label="Jump">Jump</button>
-              <button class="touch-button warm" data-touch="dash" type="button" aria-label="Dash">Dash</button>
+              <button class="touch-button accent jump" data-touch="jump" type="button" aria-label="Jump">Jump</button>
             </div>
           </div>
         </div>
 
         <div class="action-row">
-          <button id="primaryAction" class="action-button primary" type="button">Launch Mission</button>
-          <button id="secondaryAction" class="action-button" type="button">Next Mission</button>
+          <button id="primaryAction" class="action-button primary" type="button">Start Course</button>
+          <button id="secondaryAction" class="action-button" type="button">Next Course</button>
           <button id="muteButton" class="action-button" type="button">Sound On</button>
         </div>
       </section>

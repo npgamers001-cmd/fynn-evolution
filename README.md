@@ -1,15 +1,23 @@
-# Shardbound Rush
+# Skyline Obby Run
 
-A richer 2D action platformer made with HTML5 Canvas and plain JavaScript.
+A lightweight browser Obby built with HTML5 Canvas and plain JavaScript.
 
 ## What's In It
 
-- 12 missions across 4 visual worlds
-- Persistent progression with stars, shard currency, and upgrades
-- Mission select and workshop UI outside the canvas
-- Mobile touch controls plus keyboard support
-- Synthesized sound effects and looping background music with no external assets
-- Responsive layout tuned for both phones and desktop browsers
+- 5 themed pseudo-3D obstacle courses
+- Checkpoints, best-time tracking, and local progression
+- Synthesized SFX and looping music with no external assets
+- Moving platforms, wind zones, phantom platforms, boost pads, and low-gravity sections
+- Touch controls plus keyboard support
+- Performance-minded rendering tuned for both phones and desktop browsers
+
+## Courses
+
+- Lava Escape Obby
+- Time Travel Obby
+- Tower of Illusions
+- Tornado Survival Obby
+- Alien Invasion Obby
 
 ## Run
 
@@ -17,10 +25,10 @@ Open `index.html` in a modern browser.
 
 ## Controls
 
-- Move: `A/D` or `Left/Right`
-- Jump: `Space`, `W`, or `Up`
-- Dash: `Shift` or `K`
+- Move: `W/A/S/D` or `Arrow Keys`
+- Jump: `Space`
+- Restart: `R`
 - Pause: `Esc`
-- Mobile: Use the on-screen `Left`, `Right`, `Jump`, and `Dash` buttons
+- Mobile: On-screen D-pad plus `Jump`
 
 Click or press a key once if the browser blocks audio until user interaction.

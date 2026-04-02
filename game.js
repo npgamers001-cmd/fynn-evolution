@@ -6,6 +6,8 @@
   function setDirectionalInput(control, active) {
     if (control === "left") SB.input.left = active;
     if (control === "right") SB.input.right = active;
+    if (control === "forward") SB.input.forward = active;
+    if (control === "back") SB.input.back = active;
     if (control === "jump") SB.input.jumpHeld = active;
   }
 
@@ -15,7 +17,7 @@
     const control = activeTouchControls.get(pointerId);
     if (!control) return;
     activeTouchControls.delete(pointerId);
-    if (control === "left" || control === "right" || control === "jump") {
+    if (["left", "right", "forward", "back", "jump"].includes(control)) {
       const stillActive = [...activeTouchControls.values()].includes(control);
       setDirectionalInput(control, stillActive);
     }
@@ -23,37 +25,32 @@
 
   function queueJump() {
     SB.ensureAudioStarted();
-    if (SB.state.player) SB.state.player.jumpBuffer = 0.16;
-  }
-
-  function queueDash() {
-    SB.ensureAudioStarted();
-    if (SB.state.player) SB.state.player.dashQueued = 0.15;
+    if (SB.state.player) SB.state.player.jumpBuffer = 0.18;
   }
 
   function createSummaryHtml() {
-    const stage = SB.currentStageForUi();
-    const record = SB.getSaveRecord(SB.saveData, stage.id);
+    const course = SB.currentCourseForUi();
+    const record = SB.getSaveRecord(SB.saveData, course.id);
 
     if (SB.state.mode === "playing" || SB.state.mode === "paused") {
       return `
         <div class="summary-top">
           <div>
             <p class="eyebrow">Live Run</p>
-            <h2 class="section-title">${SB.state.stage.name}</h2>
-            <p class="empty-copy">${SB.state.stage.world}</p>
+            <h2 class="section-title">${course.name}</h2>
+            <p class="empty-copy">${SB.currentTheme().name}</p>
           </div>
-          <span class="mission-index">Stage ${SB.state.stage.id}</span>
+          <span class="course-index">Run</span>
         </div>
         <div class="summary-stats">
           <div class="summary-stat"><span class="progress-subtle">Time</span><strong>${SB.utils.formatTime(SB.state.elapsed)}</strong></div>
-          <div class="summary-stat"><span class="progress-subtle">Score</span><strong>${SB.state.score}</strong></div>
-          <div class="summary-stat"><span class="progress-subtle">Shards</span><strong>${SB.state.shardsCollected}/${SB.state.stage.coinGoal}</strong></div>
-          <div class="summary-stat"><span class="progress-subtle">Combo</span><strong>x${SB.state.comboMultiplier.toFixed(1)}</strong></div>
+          <div class="summary-stat"><span class="progress-subtle">Orbs</span><strong>${SB.state.orbsCollected}/${course.orbGoal}</strong></div>
+          <div class="summary-stat"><span class="progress-subtle">Respawns</span><strong>${SB.state.respawns}</strong></div>
+          <div class="summary-stat"><span class="progress-subtle">Par</span><strong>${SB.utils.formatTime(course.parTime)}</strong></div>
         </div>
         <div class="summary-highlight">
-          <span class="progress-subtle">Loadout</span>
-          <strong>${SB.state.player.maxHealth} HP, dash ${SB.state.player.dashCooldownBase.toFixed(2)}s, magnet ${SB.state.player.magnetRadius}</strong>
+          <span class="progress-subtle">Live Goal</span>
+          <strong>Reach the finish gate with the orb route cleaned up and the timer under par.</strong>
         </div>
       `;
     }
@@ -63,44 +60,17 @@
         <div class="summary-top">
           <div>
             <p class="eyebrow">Clear Report</p>
-            <h2 class="section-title">${SB.state.lastResults.stageName}</h2>
-            <p class="empty-copy">${SB.state.lastResults.world}</p>
+            <h2 class="section-title">${SB.state.lastResults.courseName}</h2>
+            <p class="empty-copy">${SB.currentTheme().name}</p>
           </div>
-          <span class="mission-index">Victory</span>
+          <span class="course-index">Clear</span>
         </div>
         ${SB.htmlStars(SB.state.lastResults.stars)}
-        <div class="results-list">
-          <div>
-            <div class="summary-stat"><span class="progress-subtle">Time</span><strong>${SB.utils.formatTime(SB.state.lastResults.time)}</strong></div>
-            <div class="summary-stat"><span class="progress-subtle">Score</span><strong>${SB.state.lastResults.score}</strong></div>
-          </div>
-          <div>
-            <div class="summary-stat"><span class="progress-subtle">Shards</span><strong>${SB.state.lastResults.shards}</strong></div>
-            <div class="summary-stat"><span class="progress-subtle">Payout</span><strong>${SB.state.lastResults.payout}</strong></div>
-          </div>
-        </div>
-        <div class="summary-highlight">
-          <span class="progress-subtle">Run Notes</span>
-          <strong>${SB.state.lastResults.flawless ? "Flawless bonus secured." : "Replay for a flawless bonus and faster payout."}</strong>
-        </div>
-      `;
-    }
-
-    if (SB.state.mode === "gameover" && SB.state.lastResults) {
-      return `
-        <div class="summary-top">
-          <div>
-            <p class="eyebrow">Run Lost</p>
-            <h2 class="section-title">${SB.state.lastResults.stageName}</h2>
-            <p class="empty-copy">Back out, upgrade, then hit the route again.</p>
-          </div>
-          <span class="mission-index">Retry</span>
-        </div>
         <div class="summary-stats">
           <div class="summary-stat"><span class="progress-subtle">Time</span><strong>${SB.utils.formatTime(SB.state.lastResults.time)}</strong></div>
-          <div class="summary-stat"><span class="progress-subtle">Score</span><strong>${SB.state.lastResults.score}</strong></div>
-          <div class="summary-stat"><span class="progress-subtle">Shards</span><strong>${SB.state.lastResults.shards}</strong></div>
-          <div class="summary-stat"><span class="progress-subtle">Best Time</span><strong>${record.bestTime === null ? "--:--" : SB.utils.formatTime(record.bestTime)}</strong></div>
+          <div class="summary-stat"><span class="progress-subtle">Orbs</span><strong>${SB.state.lastResults.orbs}</strong></div>
+          <div class="summary-stat"><span class="progress-subtle">Respawns</span><strong>${SB.state.lastResults.respawns}</strong></div>
+          <div class="summary-stat"><span class="progress-subtle">Par</span><strong>${SB.utils.formatTime(SB.state.lastResults.parTime)}</strong></div>
         </div>
       `;
     }
@@ -108,55 +78,56 @@
     return `
       <div class="summary-top">
         <div>
-          <p class="eyebrow">Selected Mission</p>
-          <h2 class="section-title">${stage.name}</h2>
-          <p class="empty-copy">${stage.world}</p>
+          <p class="eyebrow">Selected Course</p>
+          <h2 class="section-title">${course.name}</h2>
+          <p class="empty-copy">${SB.currentTheme().name}</p>
         </div>
-        <span class="mission-index">Stage ${stage.id}</span>
+        <span class="course-index">Course ${course.id}</span>
       </div>
       ${SB.htmlStars(record.stars)}
-      <p class="empty-copy">${stage.description}</p>
+      <p class="empty-copy">${course.description}</p>
       <div class="summary-stats">
-        <div class="summary-stat"><span class="progress-subtle">Bank</span><strong>${SB.saveData.bank}</strong></div>
-        <div class="summary-stat"><span class="progress-subtle">Stars</span><strong>${SB.saveData.totalStars}/36</strong></div>
-        <div class="summary-stat"><span class="progress-subtle">Cleared</span><strong>${SB.saveData.clearedCount}/12</strong></div>
-        <div class="summary-stat"><span class="progress-subtle">3-Star Runs</span><strong>${SB.saveData.masteredCount}</strong></div>
+        <div class="summary-stat"><span class="progress-subtle">Best Time</span><strong>${record.bestTime === null ? "--:--.--" : SB.utils.formatTime(record.bestTime)}</strong></div>
+        <div class="summary-stat"><span class="progress-subtle">Best Orbs</span><strong>${record.bestOrbs}</strong></div>
+        <div class="summary-stat"><span class="progress-subtle">Cleared</span><strong>${record.cleared ? "Yes" : "Not yet"}</strong></div>
+        <div class="summary-stat"><span class="progress-subtle">Stars</span><strong>${SB.saveData.totalStars}/15</strong></div>
       </div>
       <div class="summary-highlight">
-        <span class="progress-subtle">Best Record</span>
-        <strong>${record.bestTime === null ? "No clear yet." : `${SB.utils.formatTime(record.bestTime)} with ${record.bestShards} shards banked.`}</strong>
+        <span class="progress-subtle">Campaign Status</span>
+        <strong>${SB.saveData.clearedCount}/5 courses cleared. Replay for faster records and cleaner 3-star finishes.</strong>
       </div>
     `;
   }
 
   function createObjectivesHtml() {
-    const stage = SB.currentStageForUi();
-    const record = SB.getSaveRecord(SB.saveData, stage.id);
-    const liveMode = SB.state.mode === "playing" || SB.state.mode === "paused";
-    const currentTime = liveMode ? SB.state.elapsed : record.bestTime;
-    const shardsValue = liveMode ? SB.state.shardsCollected : record.bestShards;
-    const flawlessNow = liveMode ? SB.state.player.damageTaken === 0 : record.flawless;
+    const course = SB.currentCourseForUi();
+    const record = SB.getSaveRecord(SB.saveData, course.id);
+    const live = SB.state.mode === "playing" || SB.state.mode === "paused";
+    const timeValue = live ? SB.state.elapsed : record.bestTime;
+    const orbValue = live ? SB.state.orbsCollected : record.bestOrbs;
+    const respawnValue = live ? SB.state.respawns : record.bestRespawns;
+
     return `
       <div class="panel-header">
-        <h2>Targets</h2>
-        <p>Each stage hands out 3 stars and extra shards for clean execution.</p>
+        <h2>Objectives</h2>
+        <p>Three stars come from finishing the course, hitting the orb route, and beating par.</p>
       </div>
       <div class="objective-list">
-        <div class="objective-item is-complete">
-          <span class="progress-subtle">Clear The Stage</span>
-          <strong>${liveMode ? "In progress" : record.cleared ? "Complete" : "Not cleared yet"}</strong>
+        <div class="objective-item ${live || record.cleared ? "is-complete" : ""}">
+          <span class="progress-subtle">Reach The Finish</span>
+          <strong>${live ? "In progress" : record.cleared ? "Completed" : "Pending"}</strong>
         </div>
-        <div class="objective-item ${shardsValue >= stage.coinGoal ? "is-complete" : ""}">
-          <span class="progress-subtle">Shard Target</span>
-          <strong>${liveMode ? `${SB.state.shardsCollected}/${stage.coinGoal}` : `${record.bestShards}/${stage.coinGoal}`}</strong>
+        <div class="objective-item ${orbValue >= course.orbGoal ? "is-complete" : ""}">
+          <span class="progress-subtle">Orb Route</span>
+          <strong>${orbValue}/${course.orbGoal}</strong>
         </div>
-        <div class="objective-item ${currentTime !== null && currentTime <= stage.parTime ? "is-complete" : ""}">
+        <div class="objective-item ${timeValue !== null && timeValue <= course.parTime ? "is-complete" : ""}">
           <span class="progress-subtle">Par Time</span>
-          <strong>${currentTime === null ? `${SB.utils.formatTime(stage.parTime)} target` : `${SB.utils.formatTime(currentTime)} / ${SB.utils.formatTime(stage.parTime)}`}</strong>
+          <strong>${timeValue === null ? `${SB.utils.formatTime(course.parTime)} target` : `${SB.utils.formatTime(timeValue)} / ${SB.utils.formatTime(course.parTime)}`}</strong>
         </div>
-        <div class="objective-item ${flawlessNow ? "is-complete" : ""}">
-          <span class="progress-subtle">Flawless Bonus</span>
-          <strong>${flawlessNow ? "Available" : "Broken this run"}</strong>
+        <div class="objective-item ${respawnValue !== null && respawnValue <= 2 ? "is-complete" : ""}">
+          <span class="progress-subtle">Clean Route</span>
+          <strong>${respawnValue === null ? "2 respawns or fewer" : `${respawnValue} respawns`}</strong>
         </div>
       </div>
     `;
@@ -166,68 +137,54 @@
     return `
       <div class="panel-header">
         <h2>Controls</h2>
-        <p>The game keeps keyboard support and adds proper touch buttons for mobile.</p>
+        <p>Designed to stay readable on desktop and touch screens without overloading the input scheme.</p>
       </div>
       <div class="control-list">
-        <div class="control-item"><span class="progress-subtle">Move</span><strong>A / D or Left / Right</strong></div>
-        <div class="control-item"><span class="progress-subtle">Jump</span><strong>Space, W, Up, or Jump button</strong></div>
-        <div class="control-item"><span class="progress-subtle">Dash</span><strong>Shift, K, or Dash button</strong></div>
-        <div class="control-item"><span class="progress-subtle">Pause</span><strong>Escape or Primary Action while live</strong></div>
+        <div class="control-item"><span class="progress-subtle">Move</span><strong>WASD or Arrow keys</strong></div>
+        <div class="control-item"><span class="progress-subtle">Jump</span><strong>Space or Jump button</strong></div>
+        <div class="control-item"><span class="progress-subtle">Restart</span><strong>R or Restart button</strong></div>
+        <div class="control-item"><span class="progress-subtle">Pause</span><strong>Escape or Primary Action</strong></div>
       </div>
-      <p class="control-note">Tap the canvas or press a key once if the browser needs a user gesture before audio starts.</p>
+      <p class="control-note">Tap the canvas or a control once if the browser waits for a user gesture before audio starts.</p>
     `;
   }
 
-  function renderMissionGrid() {
-    const metaLocked = SB.state.mode === "playing" || SB.state.mode === "paused";
-    SB.ui.missionGrid.innerHTML = SB.data.stages.map((stage) => {
-      const record = SB.getSaveRecord(SB.saveData, stage.id);
-      const locked = !SB.isStageUnlocked(stage.id) || metaLocked;
-      return `
-        <button class="mission-card ${SB.state.selectedStageId === stage.id ? "is-selected" : ""} ${!SB.isStageUnlocked(stage.id) ? "is-locked" : ""}" data-stage-id="${stage.id}" type="button" ${locked ? "disabled" : ""}>
-          <div class="mission-top">
-            <div>
-              <span class="mission-index">Stage ${stage.id}</span>
-              <h3>${stage.name}</h3>
-            </div>
-            <span class="card-caption">${stage.theme}</span>
-          </div>
-          <p class="card-caption">${stage.world}</p>
-          ${SB.htmlStars(record.stars)}
-          <div class="mission-meta">
-            <div class="meta-pill"><span class="progress-subtle">Par</span><strong>${SB.utils.formatTime(stage.parTime)}</strong></div>
-            <div class="meta-pill"><span class="progress-subtle">Goal</span><strong>${stage.coinGoal} shards</strong></div>
-          </div>
-        </button>
-      `;
-    }).join("");
+  function createIntelHtml() {
+    const course = SB.currentCourseForUi();
+    return `
+      <div class="panel-header">
+        <h2>Build Notes</h2>
+        <p>This Obby stays lightweight by generating both visuals and SFX in code instead of loading heavy external assets.</p>
+      </div>
+      <div class="intel-list">
+        <div class="intel-item"><span>Adaptive View</span><strong>${SB.config.coarsePointer ? "Low-FX touch mode active" : "Higher detail desktop mode active"}</strong></div>
+        <div class="intel-item"><span>Theme Hooks</span><strong>${course.highlights.join(", ")}</strong></div>
+        <div class="intel-item"><span>Optimization</span><strong>Culled geometry, capped DPR, and generated synth audio keep the frame budget clean.</strong></div>
+      </div>
+    `;
   }
 
-  function renderUpgradeGrid() {
-    const metaLocked = SB.state.mode === "playing" || SB.state.mode === "paused";
-    SB.ui.upgradeGrid.innerHTML = SB.data.upgrades.map((def) => {
-      const level = SB.saveData.upgrades[def.id];
-      const maxed = level >= def.max;
-      const cost = maxed ? null : def.costs[level];
-      const affordable = !maxed && SB.saveData.bank >= cost;
+  function renderCourseGrid() {
+    const disabled = SB.state.mode === "playing" || SB.state.mode === "paused";
+    SB.ui.courseGrid.innerHTML = SB.data.courses.map((course) => {
+      const record = SB.getSaveRecord(SB.saveData, course.id);
+      const locked = !SB.isCourseUnlocked(course.id);
       return `
-        <article class="upgrade-card ${affordable ? "is-affordable" : ""}">
-          <div class="upgrade-top">
+        <button class="course-card ${SB.state.selectedCourseId === course.id ? "is-selected" : ""} ${locked ? "is-locked" : ""}" data-course-id="${course.id}" type="button" ${locked || disabled ? "disabled" : ""}>
+          <div class="course-top">
             <div>
-              <span class="upgrade-level">Lv ${level}/${def.max}</span>
-              <h3>${def.name}</h3>
+              <span class="course-index">Course ${course.id}</span>
+              <h3>${course.name}</h3>
             </div>
-            ${SB.htmlStars(Math.min(3, level))}
+            <span class="card-caption">${SB.data.themes[course.theme].name}</span>
           </div>
-          <p class="upgrade-copy">${def.summary}</p>
-          <p class="card-caption">${def.detail(level)}</p>
-          <div class="upgrade-footer">
-            <span class="status-chip">${maxed ? "Maxed" : `${cost} shards`}</span>
-            <button class="upgrade-buy" type="button" data-upgrade-id="${def.id}" ${maxed || !affordable || metaLocked ? "disabled" : ""}>
-              ${maxed ? "Installed" : "Buy"}
-            </button>
+          <p class="card-caption">${course.highlights.join(" / ")}</p>
+          ${SB.htmlStars(record.stars)}
+          <div class="course-meta">
+            <div class="meta-pill"><span class="progress-subtle">Par</span><strong>${SB.utils.formatTime(course.parTime)}</strong></div>
+            <div class="meta-pill"><span class="progress-subtle">Orbs</span><strong>${course.orbGoal}</strong></div>
           </div>
-        </article>
+        </button>
       `;
     }).join("");
   }
@@ -240,16 +197,13 @@
       SB.ui.primaryAction.textContent = "Resume Run";
       SB.ui.secondaryAction.textContent = "Main Menu";
     } else if (SB.state.mode === "victory") {
-      SB.ui.primaryAction.textContent = "Replay Mission";
-      SB.ui.secondaryAction.textContent = SB.state.stage.id < SB.data.stages.length ? "Next Mission" : "Main Menu";
-    } else if (SB.state.mode === "gameover") {
-      SB.ui.primaryAction.textContent = "Retry Mission";
-      SB.ui.secondaryAction.textContent = "Main Menu";
+      SB.ui.primaryAction.textContent = "Replay Course";
+      SB.ui.secondaryAction.textContent = SB.state.course.id < SB.data.courses.length ? "Next Course" : "Main Menu";
     } else {
-      SB.ui.primaryAction.textContent = "Launch Mission";
-      SB.ui.secondaryAction.textContent = "Next Mission";
+      SB.ui.primaryAction.textContent = "Start Course";
+      SB.ui.secondaryAction.textContent = "Next Course";
     }
-    SB.ui.primaryAction.disabled = SB.state.mode === "home" && !SB.isStageUnlocked(SB.state.selectedStageId);
+    SB.ui.primaryAction.disabled = SB.state.mode === "home" && !SB.isCourseUnlocked(SB.state.selectedCourseId);
     SB.ui.secondaryAction.disabled = SB.state.mode === "home" && SB.saveData.highestUnlocked <= 1;
     SB.ui.muteButton.textContent = SB.audio.muted ? "Sound Off" : "Sound On";
   }
@@ -262,11 +216,11 @@
 
   SB.renderUi = () => {
     document.body.dataset.mode = SB.state.mode;
-    renderMissionGrid();
-    renderUpgradeGrid();
+    renderCourseGrid();
     SB.ui.summaryPanel.innerHTML = createSummaryHtml();
     SB.ui.objectivePanel.innerHTML = createObjectivesHtml();
     SB.ui.controlPanel.innerHTML = createControlHtml();
+    SB.ui.intelPanel.innerHTML = createIntelHtml();
     updateActionButtons();
     updateTouchControls();
   };
@@ -274,35 +228,27 @@
   function handlePrimaryAction() {
     if (SB.state.mode === "playing") return SB.togglePause();
     if (SB.state.mode === "paused") return SB.togglePause();
-    if (SB.state.mode === "victory" || SB.state.mode === "gameover") return SB.startSelectedStage();
-    return SB.startSelectedStage();
+    return SB.startSelectedCourse();
   }
 
   function handleSecondaryAction() {
-    if (SB.state.mode === "playing") return SB.startSelectedStage();
+    if (SB.state.mode === "playing") return SB.startSelectedCourse();
     if (SB.state.mode === "paused") return SB.enterHomeView();
     if (SB.state.mode === "victory") {
-      if (SB.state.stage.id < SB.data.stages.length && SB.saveData.highestUnlocked > SB.state.stage.id) {
-        SB.state.selectedStageId = SB.state.stage.id + 1;
-        SB.saveData.selectedStageId = SB.state.selectedStageId;
+      if (SB.state.course.id < SB.data.courses.length && SB.saveData.highestUnlocked > SB.state.course.id) {
+        SB.state.selectedCourseId = SB.state.course.id + 1;
+        SB.saveData.selectedCourseId = SB.state.selectedCourseId;
         SB.persistSave();
       }
       return SB.enterHomeView();
     }
-    if (SB.state.mode === "gameover") return SB.enterHomeView();
-    return SB.selectNextStage();
+    return SB.selectNextCourse();
   }
 
-  SB.ui.missionGrid.addEventListener("click", (event) => {
-    const target = event.target.closest("[data-stage-id]");
+  SB.ui.courseGrid.addEventListener("click", (event) => {
+    const target = event.target.closest("[data-course-id]");
     if (!target) return;
-    SB.selectStage(Number(target.dataset.stageId));
-  });
-
-  SB.ui.upgradeGrid.addEventListener("click", (event) => {
-    const target = event.target.closest("[data-upgrade-id]");
-    if (!target) return;
-    SB.buyUpgrade(target.dataset.upgradeId);
+    SB.selectCourse(Number(target.dataset.courseId));
   });
 
   SB.ui.primaryAction.addEventListener("click", () => {
@@ -325,7 +271,7 @@
 
   SB.canvas.addEventListener("pointerdown", () => {
     SB.ensureAudioStarted();
-    if (SB.state.mode === "home") SB.startSelectedStage();
+    if (SB.state.mode === "home") SB.startSelectedCourse();
     else if (SB.state.mode === "paused") SB.togglePause();
   });
 
@@ -337,12 +283,12 @@
       activeTouchControls.set(event.pointerId, control);
       button.setPointerCapture(event.pointerId);
       SB.ensureAudioStarted();
-      if (control === "left" || control === "right") setDirectionalInput(control, true);
       if (control === "jump") {
         SB.input.jumpHeld = true;
         queueJump();
+      } else {
+        setDirectionalInput(control, true);
       }
-      if (control === "dash") queueDash();
       event.preventDefault();
     });
 
@@ -357,26 +303,21 @@
   });
 
   window.addEventListener("keydown", (event) => {
-    if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space", "KeyA", "KeyD", "KeyW", "ShiftLeft", "ShiftRight", "KeyK"].includes(event.code)) event.preventDefault();
-    if (event.code === "ArrowLeft" || event.code === "KeyA") {
-      SB.input.left = true;
-      SB.ensureAudioStarted();
-    }
-    if (event.code === "ArrowRight" || event.code === "KeyD") {
-      SB.input.right = true;
-      SB.ensureAudioStarted();
-    }
-    if (event.code === "Space" || event.code === "ArrowUp" || event.code === "KeyW") {
+    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyA", "KeyD", "KeyW", "KeyS"].includes(event.code)) event.preventDefault();
+    if (event.code === "ArrowLeft" || event.code === "KeyA") SB.input.left = true;
+    if (event.code === "ArrowRight" || event.code === "KeyD") SB.input.right = true;
+    if (event.code === "ArrowUp" || event.code === "KeyW") SB.input.forward = true;
+    if (event.code === "ArrowDown" || event.code === "KeyS") SB.input.back = true;
+    if (event.code === "Space") {
       SB.input.jumpHeld = true;
       queueJump();
     }
-    if (event.code === "ShiftLeft" || event.code === "ShiftRight" || event.code === "KeyK") queueDash();
     if (event.code === "Escape") {
       if (SB.state.mode === "playing" || SB.state.mode === "paused") SB.togglePause();
-      else if (SB.state.mode === "victory" || SB.state.mode === "gameover") SB.enterHomeView();
+      else if (SB.state.mode === "victory") SB.enterHomeView();
     }
     if (event.code === "Enter") handlePrimaryAction();
-    if (event.code === "KeyR" && ["playing", "paused", "victory", "gameover"].includes(SB.state.mode)) SB.startSelectedStage();
+    if (event.code === "KeyR" && ["playing", "paused", "victory"].includes(SB.state.mode)) SB.startSelectedCourse();
     if (event.code === "KeyM") {
       const muted = SB.audio.toggleMuted();
       SB.saveData.settings.muted = muted;
@@ -388,7 +329,9 @@
   window.addEventListener("keyup", (event) => {
     if (event.code === "ArrowLeft" || event.code === "KeyA") SB.input.left = false;
     if (event.code === "ArrowRight" || event.code === "KeyD") SB.input.right = false;
-    if (event.code === "Space" || event.code === "ArrowUp" || event.code === "KeyW") SB.input.jumpHeld = false;
+    if (event.code === "ArrowUp" || event.code === "KeyW") SB.input.forward = false;
+    if (event.code === "ArrowDown" || event.code === "KeyS") SB.input.back = false;
+    if (event.code === "Space") SB.input.jumpHeld = false;
   });
 
   document.addEventListener("visibilitychange", () => {
@@ -409,7 +352,7 @@
     requestAnimationFrame(frame);
   }
 
-  SB.applyThemeToUi(SB.getStageById(SB.state.selectedStageId).theme);
+  SB.applyThemeToUi(SB.getCourseById(SB.state.selectedCourseId).theme);
   SB.enterHomeView();
   SB.resizeCanvas();
   requestAnimationFrame(frame);
